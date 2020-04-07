@@ -34,8 +34,8 @@ def fstep(r2):
     return k1*r2+k2
 
 
-HEIGHT=360//4 #x
-WIDTH=640//4#y
+HEIGHT=360*2 #x
+WIDTH=640*2#y
 
 
 #zoom sur le disque
@@ -46,18 +46,18 @@ WIDTH=640//4#y
 #Vue globale
 FOV=50
 camera_pos=np.array([-10.,0.,0.6])
-camera_dir=np.array([0.03,0.])#theta et phi
-
+camera_dir=np.array([0.04,0.])#theta et phi
 
 
 RAdisk_min=1.5
 RAdisk_max=4.
 
-RAdisk_max2=RAdisk_max**2
 RAdisk_min2=RAdisk_min**2
+RAdisk_max2=RAdisk_max**2
 
-R_schwarzschild=1 #inutile
-R_min=1.5*R_schwarzschild # en dessous les photons sont piégés
+
+R_schwarzschild=1. #inutile
+R_min=1.*R_schwarzschild # en dessous les photons sont piégés
 R_inf=20 
 R_inf2=R_inf**2
 R_min2=R_min**2
@@ -85,10 +85,6 @@ def normalize(x):
 
 def sqrnorm(x):
     return np.dot(x,x)
-
-
-
-
 
 
 
@@ -275,7 +271,7 @@ def sim(point0,angle0,maxiter=10000):
     
     angle=asSpherical_u(normalize(y[3:6]))
     if r2>R_min2:
-        pixel_color=get_background_pixel(angle[0],angle[1]) #Le rayon  "a atteint l'infini" uniquement si la boucle precedente ne s'est pas arretee à cause de r<1.5 Rs
+        pixel_color=get_background_pixel(angle[0],angle[1]) #Le rayon  "a atteint l'infini" uniquement si la boucle precedente ne s'est pas arretee à cause de r<Rs
     if n>0:
         for i in range(n-1,-1,-1):
             alpha=np.max(transparency_list[i])#creer une transparence pour le disque (si la texture est noire il doit être totalement transparent), on peut quand meme voir le disque si le rayon a fini dans le trous noir
