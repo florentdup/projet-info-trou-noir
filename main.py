@@ -9,7 +9,7 @@ from PIL import Image
 Image.MAX_IMAGE_PIXELS = 1000000000  
 
 start_time = time.time()
-background=mpimg.imread("background.jpg")/255./1.2#eso0932a.tif
+background=mpimg.imread("background.jpg")/255.
 adisk=mpimg.imread("adisk.jpg")/255.
 #adisk=np.flip(adisk,(0,1))#exterieur du disque en bas, sans changer les couleurs (axis 2)
 #plt.imshow(adisk)
@@ -25,35 +25,36 @@ BACKGROUND_Y=background.shape[1]
 ADISK_X=adisk.shape[0]
 ADISK_Y=adisk.shape[1]
 #alpha_adisk=0.95 #opacité
-adisk_texture_rep=4.
+adisk_texture_rep=4.#repeter plusieurs fois la texture du disque pour un tour 
 
-STEP=1.
-k1=3.**2/(20**2-1.**2)
-k2=k1*(-1.)+0.4
+#STEP=.3
+k1=2.**2/(15**2-1.**2)
+k2=k1*(-1.)+0.5
 def fstep(r2):
     return k1*r2+k2
 
-
-HEIGHT=360*2 #x
+#résolution de rendu
+HEIGHT=360*2#x
 WIDTH=640*2#y
 
+#Parametre de la vue
 
 #zoom sur le disque
-#FOV=10
-#camera_pos=np.array([-10.,1.,0.3])
-#camera_dir=np.array([0.0,0.2])#theta et phi
+#FOV=4
+#camera_pos=np.array([-10.,1.,0.1])
+#camera_dir=np.array([-0.0,0.10])#theta et phi
 
 #Vue globale
 FOV=50
-camera_pos=np.array([-10.,0.,0.6])
+camera_pos=np.array([-13.,0.,1])
 camera_dir=np.array([0.04,0.])#theta et phi
 
+#Rayon du accretion disk
+RAdisk_min=2.
+RAdisk_max=6.
 
-RAdisk_min=1.5
-RAdisk_max=4.
-
-RAdisk_min2=RAdisk_min**2
-RAdisk_max2=RAdisk_max**2
+RAdisk_min2=(RAdisk_min-1)**2 #le -1 et +1 sont une marge pour la detection avant de calculer le point de collision exact
+RAdisk_max2=(RAdisk_max+1)**2+2
 
 
 R_schwarzschild=1. #inutile
@@ -123,12 +124,11 @@ def asCartesian_u(thetaphi):
 #        F=-3./2.*L2/sixth(pos)*pos
 #        return np.concatenate([xp,F])
 
-def sim_1D(point0,angle0,maxiter=100):
+def sim_1D(point0,angle0,maxiter=10000):
     N=0
     X,Y=[],[]
     #r=np.linalg.norm(pos)
     r2=sqrnorm(point0)
-    r6=0.
 
     y=np.zeros((6))
     
@@ -141,15 +141,11 @@ def sim_1D(point0,angle0,maxiter=100):
 
     
 
-    rkstep=STEP
+    rkstep=fstep(r2)
     
     while N<maxiter and R_min2<r2<R_inf2:
         N+=1
-
-        r2=sqrnorm(y[0:3])
         
-
-        rkstep=fstep(r2)
 
         k1 = RK4f( y, L2)
         k2 = RK4f( y + 0.5*rkstep*k1, L2)
@@ -158,7 +154,9 @@ def sim_1D(point0,angle0,maxiter=100):
 
         increment = rkstep/6. * (k1 + 2*k2 + 2*k3 + k4)
                     
-        y+= increment          
+        y+= increment  
+        r2=sqrnorm(y[0:3]) 
+        rkstep=fstep(r2)       
                 
         X.append(y[0])
         Y.append(y[1])
@@ -175,8 +173,9 @@ def sim_1D(point0,angle0,maxiter=100):
 def render_1D():
     fig, ax = plt.subplots()
     ax.axis('equal')
+
     c1=plt.Circle((0, 0), 1., color='black',fill=False)
-    c2=plt.Circle((0, 0), 1.5*R_schwarzschild, color='g',fill=False)
+    c2=plt.Circle((0, 0), R_min, color='g',fill=False)
 
     adisk1=plt.Circle((0, 0), RAdisk_min, color='black',fill=False)
     adisk2=plt.Circle((0, 0), RAdisk_max, color='black',fill=False)
@@ -189,7 +188,7 @@ def render_1D():
 
     T=np.linspace(0,1,10)
     for k in T:
-        X,Y=sim_1D(np.array([-10,k,0]) ,np.array([np.pi/2,0.1]))
+        X,Y=sim_1D(np.array([-17,k,0]) ,np.array([np.pi/2,0.05]))
         plt.plot(X,Y,"*")
 
     plt.show()
@@ -205,7 +204,7 @@ def sim(point0,angle0,maxiter=10000):
     N=0
     #r=np.linalg.norm(pos)
     r2=sqrnorm(point0)
-    oldz=0.
+    oldz=0. #pour detecter le passage à travers le plan z=0 (pour tracer le disque)
 
     y=np.zeros((6))
     
@@ -219,7 +218,7 @@ def sim(point0,angle0,maxiter=10000):
     pixel_color=np.zeros((3))
     transparency_list=[]
 
-    rkstep=STEP
+    rkstep=fstep(r2)
 
 
 
@@ -229,14 +228,10 @@ def sim(point0,angle0,maxiter=10000):
     while N<maxiter and R_min2<r2<R_inf2:
         N+=1
 
-        #rkstep=fstep(r2)
-
-
+        
         oldz=y[2]
 
-        r2=sqrnorm(y[0:3]) #Ne pas avoir à calculer de racine
 
-        rkstep=fstep(r2)
 
         k1 = RK4f( y, L2)
         k2 = RK4f( y + 0.5*rkstep*k1, L2)
@@ -244,8 +239,14 @@ def sim(point0,angle0,maxiter=10000):
         k4 = RK4f( y +     rkstep*k3, L2)
 
         increment = rkstep/6. * (k1 + 2*k2 + 2*k3 + k4)
+        #increment=k1*rkstep #euler normal
+
+
                     
         y+= increment
+
+        r2=sqrnorm(y[0:3]) #Ne pas avoir à calculer de racine
+        rkstep=fstep(r2)
 
         disk_crossing = np.logical_xor(oldz > 0., y[2] > 0.)#on traverse le plan z=0
         disk_distance = np.logical_and((r2 < RAdisk_max2), (r2 > RAdisk_min2)) #On l'a traversé la ou est le disque 
@@ -255,17 +256,15 @@ def sim(point0,angle0,maxiter=10000):
             lambdaa = - y[2]/y[5] #y[5] est la coordonné de la "vitesse" selon z
             coll_point=y[0:3]+lambdaa*y[3:6]
             r=np.linalg.norm(coll_point)
-            if r<RAdisk_min:
-                r=RAdisk_min
-            if r>=RAdisk_max*0.999:
-                r=RAdisk_max*0.999
-            theta=np.arccos(coll_point[2]/r)
-            a=int((r-RAdisk_min)*ADISK_X/(RAdisk_max-RAdisk_min))#pour ne pas depasser  
-            b=int(ADISK_Y*np.mod((adisk_texture_rep*theta/np.pi+1)/2.,1)) #Pas besoin de s'occuper du modulo ici arctan2 dans -pi,pi
-            transparency_list.append(adisk[a,b])# il faut cette liste pour pouvoir calculer la couleur du pixel si le rayon a croisé plusieurs fois le disque
+            disk=np.logical_and((r < RAdisk_max), (r > RAdisk_min)) #reverification plus précise
+            if disk:
+                phi  =  np.arctan2(coll_point[1]/r,coll_point[0]/r)
+                a=int((r-RAdisk_min)*ADISK_X/(RAdisk_max-RAdisk_min))
+                #b=int(ADISK_Y*np.mod((adisk_texture_rep*theta/np.pi+1)/2.,1)) #Pas besoin de s'occuper du modulo ici arctan2 dans -pi,pi
+                b=int(ADISK_Y*np.mod(adisk_texture_rep*phi-np.pi,2*np.pi)/(2*np.pi))
+                transparency_list.append(adisk[a,b])# il faut cette liste pour pouvoir calculer la couleur du pixel si le rayon a croisé plusieurs fois le disque
                 
                 
-        #vect=vect+step*eq(vect,L2) 
 
     n=len(transparency_list)
     
@@ -317,8 +316,10 @@ if rendu=="3D":
     plt.show()
 
 
-#n=1
+#n=2
 #T=np.linspace(-4*np.pi,4*np.pi,1000)
+
 #Y=np.mod((n*T/np.pi+1)/2.,1)
+#Y=np.mod(n*T-np.pi,2*np.pi)/(2*np.pi)
 #plt.plot(T,Y)
 #plt.show()
