@@ -16,7 +16,7 @@ using namespace std;
 #define CHANNEL_NUM 3
 
 
-#define MAXITER 1000
+#define MAXITER 6000
 
 struct Rendu rdr;
 struct Scene scn;
@@ -27,8 +27,8 @@ struct Scene scn;
 int background_width, background_height, background_bpp;
 int adisk_width, adisk_height, adisk_bpp;
 
-uint8_t* background = stbi_load("background.png", &background_width, &background_height, &background_bpp, 3);
-uint8_t* adisk = stbi_load("adisk.png", &adisk_width, &adisk_height, &adisk_bpp, 3);
+uint8_t* background = stbi_load("sphericalmap.png", &background_width, &background_height, &background_bpp, 3);
+uint8_t* adisk = stbi_load("grille_adisk.png", &adisk_width, &adisk_height, &adisk_bpp, 3);
 
 
 
@@ -101,6 +101,9 @@ void sim(float x, float y,float z, float theta0,float phi0,int* pixelr,int* pixe
 
     float L2=rvectv_x*rvectv_x+rvectv_y*rvectv_y+rvectv_z*rvectv_z;
 
+    float tmp=-1.5*L2*rdr.step;
+    bool  disk_crossing,disk_distance,disk;
+
 
 
     while ((N<MAXITER) && (rdr.R_min2<r2) && (r2<rdr.R_inf2))
@@ -117,13 +120,15 @@ void sim(float x, float y,float z, float theta0,float phi0,int* pixelr,int* pixe
         y+=yp*rdr.step;
         z+=zp*rdr.step;
 
-        xp+= - rdr.step*1.5 * L2 * x / r6;
-        yp+= - rdr.step*1.5 * L2 * y / r6; 
-        zp+= - rdr.step*1.5 * L2 * z / r6;
+        
 
-        bool disk_crossing = (oldz>0) != (z > 0.) ;//on traverse le plan z=0
-        bool disk_distance = (r2 < scn.RAdisk_max2) && (r2 > scn.RAdisk_min2); //On l'a traversé la ou est le disque 
-        bool disk = disk_crossing && disk_distance;
+        xp+=  tmp * x / r6;
+        yp+=  tmp * y / r6; 
+        zp+=  tmp * z / r6;
+
+        disk_crossing = (oldz>0) != (z > 0.) ;//on traverse le plan z=0
+        disk_distance = (r2 < scn.RAdisk_max2) && (r2 > scn.RAdisk_min2); //On l'a traversé la ou est le disque 
+        disk = disk_crossing && disk_distance;
 
         if (disk)
         { 
@@ -136,18 +141,18 @@ void sim(float x, float y,float z, float theta0,float phi0,int* pixelr,int* pixe
             disk=(r < scn.RAdisk_max) && (r > scn.RAdisk_min); //#reverification plus précise
             if (disk)
             {
-                k++;
-                 float phi  =  atan2(y/r,x/r);
-                 int cx=int((r-scn.RAdisk_min)*adisk_height/(scn.RAdisk_max-scn.RAdisk_min));
-                 int cy=int(adisk_width*mod(scn.adisk_texture_rep*phi-M_PI,2.*M_PI)/(2.*M_PI));
+                if (k<rdr.maxtransparency)
+                {
+                    k++;
+                    float phi  =  atan2(y/r,x/r);
+                    int cx=int((r-scn.RAdisk_min)*adisk_height/(scn.RAdisk_max-scn.RAdisk_min));
+                    int cy=int(adisk_width*mod(scn.adisk_texture_rep*phi-M_PI,2.*M_PI)/(2.*M_PI));
 
-                 int loc =(cx*adisk_width+cy)*CHANNEL_NUM;
-
-
-                if (k<rdr.maxtransparency){
-                 pixel_transpr[k]==adisk[loc];
-                 pixel_transpg[k]=adisk[loc+1];
-                 pixel_transpb[k]=adisk[loc+2];
+                    int loc =(cx*adisk_width+cy)*CHANNEL_NUM;
+                
+                    pixel_transpr[k]==adisk[loc];
+                    pixel_transpg[k]=adisk[loc+1];
+                    pixel_transpb[k]=adisk[loc+2];
                 }
                  
             }
@@ -176,10 +181,10 @@ void sim(float x, float y,float z, float theta0,float phi0,int* pixelr,int* pixe
         *pixelr=background[loc];
         *pixelg=background[loc+1];
         *pixelb=background[loc+2];
-        }
+    }
 
-        for (int l = k; l >=0; --l){
-            
+    for (int l = k; l >=0; --l)
+    {
         float alpha=(float)pixel_transpb[l]/255.;
 
         *pixelr=int(alpha*(float)pixel_transpb[l]+(1-alpha)*(*pixelr));
@@ -187,7 +192,7 @@ void sim(float x, float y,float z, float theta0,float phi0,int* pixelr,int* pixe
         *pixelb=int(alpha*(float)pixel_transpb[l]+(1-alpha)*(*pixelb)); 
 
         
-        }        
+    }        
         
 }
 
@@ -224,8 +229,9 @@ int main() {
     uint8_t* image = new uint8_t[rdr.width * rdr.height * CHANNEL_NUM];
     
     int index = 0;
-    float xp0,yp0,zp0;
-    float x,y,z;
+    float x,y,z,xp0,yp0,zp0;
+    float theta0,phi0;
+    int pixelr,pixelg,pixelb;
 
      for (int j = 0; j <rdr.height; ++j)
      {
@@ -241,18 +247,18 @@ int main() {
 
         normalise(&xp0,&yp0,&zp0);
 
-        float theta0;
-        float phi0;
+        
 
         asSpherical(xp0,yp0,zp0,&theta0,&phi0);
 
         theta0+=scn.camera.theta;
         phi0+=scn.camera.phi;
 
+        pixelr=0;
+        pixelg=0;
+        pixelb=0; 
 
-        int pixelr=0;
-        int pixelg=0;
-        int pixelb=0; 
+
 
         sim(x, y, z, theta0,phi0,&pixelr,&pixelg,&pixelb);
 
@@ -265,7 +271,6 @@ int main() {
          image[index++] = pixelr;
          image[index++] = pixelg;
          image[index++] = pixelb;
-         
 
         }
         if (j%10==0){
