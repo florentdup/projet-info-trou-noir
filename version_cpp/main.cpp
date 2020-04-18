@@ -2,6 +2,8 @@
 #include <iostream>
 #include <math.h>
 #include <tgmath.h>
+#include <string.h>
+
 
 using namespace std;
 
@@ -54,6 +56,7 @@ void asCartesian(float theta,float phi,float *x,float* y,float* z)
     *y=tmp*sin(phi);
     *z=cos(theta);
 }
+
 
 float mod(float x, float y)
 {
@@ -144,7 +147,7 @@ void sim(float x, float y,float z, float theta0,float phi0,int* pixelr,int* pixe
                 if (k<rdr.maxtransparency)
                 {
                     k++;
-                    float phi  =  atan2(y/r,x/r);
+                    float phi  =  atan2(coll_y/r,coll_x/r);
                     int cx=int((r-scn.RAdisk_min)*adisk_height/(scn.RAdisk_max-scn.RAdisk_min));
                     int cy=int(adisk_width*mod(scn.adisk_texture_rep*phi-M_PI,2.*M_PI)/(2.*M_PI));
 
@@ -168,7 +171,7 @@ void sim(float x, float y,float z, float theta0,float phi0,int* pixelr,int* pixe
         asSpherical (xp, yp, zp,&theta,&phi);
 
 
-        if ((2.*mod(theta-M_PI,2.*M_PI)/(2.*M_PI)-1)<0.)
+        if ((mod(theta-M_PI,2.*M_PI)/(M_PI)-1)<0.)
         {
         phi+=M_PI;
         }
@@ -185,7 +188,7 @@ void sim(float x, float y,float z, float theta0,float phi0,int* pixelr,int* pixe
 
     for (int l = k; l >=0; --l)
     {
-        float alpha=(float)pixel_transpb[l]/255.;
+        float alpha=(float)pixel_transpg[l]/255.;
 
         *pixelr=int(alpha*(float)pixel_transpb[l]+(1-alpha)*(*pixelr));
         *pixelg=int(alpha*(float)pixel_transpb[l]+(1-alpha)*(*pixelg));
@@ -196,42 +199,14 @@ void sim(float x, float y,float z, float theta0,float phi0,int* pixelr,int* pixe
         
 }
 
-
-    
-
-    
-
-int main() {
-
-    rdr.height=1080;
-    rdr.width=1920;
-    rdr.R_schwarzschild=1.;
-    rdr.R_inf=15.; //distance à partir de laquelle on considere etre a l'infini
-    rdr.step=0.05;
-    rdr.maxtransparency=6;
-
-    scn.RAdisk_min=2.;
-    scn.RAdisk_max=5.;
-    scn.FOV=40.;
-
-    
-    scn.camera.x=-13.;
-    scn.camera.y=0.;
-    scn.camera.z=1.;
-    scn.camera.theta=0.04;
-    scn.camera.phi=0.;
-    scn.adisk_texture_rep=8.;
-
-    rdr.initRendering();//quleques calculs pour avoir les carrés de certaines qtité et le fov en radian etc..
-    scn.initScene(rdr.width);
-    
-
+void render(char* name){
     uint8_t* image = new uint8_t[rdr.width * rdr.height * CHANNEL_NUM];
     
     int index = 0;
     float x,y,z,xp0,yp0,zp0;
     float theta0,phi0;
     int pixelr,pixelg,pixelb;
+
 
      for (int j = 0; j <rdr.height; ++j)
      {
@@ -274,14 +249,85 @@ int main() {
 
         }
         if (j%10==0){
-        printf("%.2f pourcents \n",100.*(float)j/((float)rdr.height));
+        printf("file %s %.2f pourcents \n",name,100.*(float)j/((float)rdr.height));
         }
         
      }
   
-    stbi_write_png("image_sortie.png", rdr.width, rdr.height, CHANNEL_NUM, image, rdr.width*CHANNEL_NUM);
+    stbi_write_png(name, rdr.width, rdr.height, CHANNEL_NUM, image, rdr.width*CHANNEL_NUM);
+}
+
+
+    
+
+    
+
+int main() {
+
+    rdr.height=1080;
+    rdr.width=1920;
+    rdr.R_schwarzschild=1.;
+    rdr.R_inf=15.; //distance à partir de laquelle on considere etre a l'infini
+    rdr.step=0.05;
+    rdr.maxtransparency=6;
+
+    scn.RAdisk_min=2.;
+    scn.RAdisk_max=5.;
+    scn.FOV=40.;
+    
+    scn.adisk_texture_rep=8.;
+
+    rdr.initRendering();//quleques calculs pour avoir les carrés de certaines qtité et le fov en radian etc..
+    scn.initScene(rdr.width);
+
+    //Rendre une image fixe:
+
+    scn.camera.x=-13.;
+    //scn.camera.y=0.;
+    scn.camera.z=1.;
+    scn.camera.theta=0.04;
+    scn.camera.phi=0.;
+
+    render("resultat.png");
+
+
+
+    //rendre plusieurs images 
+
+    /*float phicoordcamera=0;
+    float thetacoordcamera=0;
+    float rcoordcamera=13.;
+    float xcamera,ycamera,zcamera;
+
+    int nombreimage=150;
+
+    char filename[10];
+
+
+    for (int k=0;k<nombreimage;++k)
+    {
+        snprintf(filename, sizeof(filename), "%.3i%s", k+1, ".png");
+        //printf ("%s \n",name);
+
+        phicoordcamera=(float)k/((float)nombreimage)*2*M_PI*0.25+M_PI;
+        thetacoordcamera=1.4937;
+        asCartesian(thetacoordcamera,phicoordcamera,&xcamera,&ycamera,&zcamera);
+        xcamera*=rcoordcamera;
+        ycamera*=rcoordcamera;
+        zcamera*=rcoordcamera;
+
+        scn.camera.x=xcamera;
+        scn.camera.y=ycamera;
+        scn.camera.z=zcamera;
+        scn.camera.theta=0.04;
+        scn.camera.phi=(phicoordcamera-M_PI);
+
+        render(filename);
+
+    }*/
 
     stbi_image_free(background);
+    stbi_image_free(adisk);
 
     return 0;
 }
