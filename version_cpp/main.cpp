@@ -116,7 +116,7 @@ void sim(float x, float y,float z, float theta0,float phi0,int* pixelr,int* pixe
         
 
         r2=sqrnorm(x,y,z);
-        r6=r2*r2*r2;
+        r6 = r2*r2*r2;
 
         
         x+=xp*rdr.step;
