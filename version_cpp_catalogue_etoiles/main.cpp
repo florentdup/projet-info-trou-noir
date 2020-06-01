@@ -100,7 +100,7 @@ void getStarColor(float* rgbR,float* rgbG,float* rgbB,float temperature,float br
 
     int c=int(((temperature-Tmin)*colorScale_width/(Tmax-Tmin)));
 
-    int loc =(c)*CHANNEL_NUM;
+    int loc =c*CHANNEL_NUM;
 
     brightness*=1./(exp(29622.4/temperature)-1);//POur un corps noir dont le spectre est peu étalé
 
@@ -117,6 +117,8 @@ void getDiskColor(float* rgbR,float* rgbG,float* rgbB,float temperature,float br
     int c=int(((temperature-Tmin)*colorScale_width/(Tmax-Tmin)));
 
     int loc =c*CHANNEL_NUM;
+
+    brightness*=1./(exp(29622.4/temperature)-1);//POur un corps noir dont le spectre est peu étalé
 
     *rgbR=(float)colorScale[loc]*brightness;
     *rgbG=(float)colorScale[loc+1]*brightness;
@@ -225,30 +227,24 @@ void sim(float x, float y,float z, float* xp,float* yp,float* zp,float* pixel_tr
                     normalise(&dirPhoton_x,&dirPhoton_y,&dirPhoton_z);
 
                     float beta=scn.diskRotationSpeed(r);//Obtenir la vitesse des poussières en ce point
-                    float costheta=(dirPhoton_x*diskspeed_x+dirPhoton_y*diskspeed_y+dirPhoton_z*diskspeed_z);//Obtenir le cosinus de l'angle entre le rayon et la vitesse des particules (Les vecteurs sont normés)
+                    float costhetadoppler=(dirPhoton_x*diskspeed_x+dirPhoton_y*diskspeed_y+dirPhoton_z*diskspeed_z);//Obtenir le cosinus de l'angle entre le rayon et la vitesse des particules (Les vecteurs sont normés)
 
  
                     
                     //Temperature du disque à cet endroit
                     float Temp0=scn.diskTemp(r);
                     //Intensité du corps noir à cette temperature:
-                    float luminosityfactor=1./(exp(29622.4/Temp0)-1);  //Le facteur d'intensité doit être calculé pour la temperature Temp0
+                    //float luminosityfactor=1./(exp(29622.4/Temp0)-1);  //Le facteur d'intensité doit être calculé pour la temperature Temp0
 
                     //Décalage en fréquence environ égal à "décalage en temperature" (lambdamax*Temperature=cste)(uniquement pour la couleur, pas pour l'intensité)
-                    float Temp=Temp0*(1-beta*costheta)/sqrt(1-beta*beta);//Effet doppler
+                    float Temp=Temp0*(1-beta*costhetadoppler)/sqrt(1-beta*beta);//Effet doppler
 
 
                     Temp=Temp*sqrt((1.-1/r)); //Redshift gravitationnel simple à calculer ds la metrique de Schwarzschild (depend uniquement de la position d'emmision du rayon( sur le disque))
                     
 
-
-                    float q=(Temp/Temp0);//Pour obtenir approximativement le rapport de fréquence nu/nu0 (frequence observée sur frequence d'emission)
-
-                    luminosityfactor*=q*q*q*q; // (Intensité sur frequence au cube I/nu^3 est invariant, donc pour le spectre total décalage en puissance 4)
-
-                    
-
-                    getDiskColor(&pixel_transpr[k],&pixel_transpg[k],&pixel_transpb[k],Temp,luminosityfactor);//Obtenir la couleur
+                    //float q=(Temp/Temp0);//Pour obtenir approximativement le rapport de fréquence nu/nu0 (frequence observée sur frequence d'emission)
+                    //luminosityfactor*=q*q*q*q; // (Intensité sur frequence au cube I/nu^3 est invariant, donc pour le spectre total décalage en puissance 4)
 
 
                     //Recuperer la texture du disque à cet endroit, qu'on utilise uniquemenet pour obtenir la transparence du disque
@@ -256,7 +252,9 @@ void sim(float x, float y,float z, float* xp,float* yp,float* zp,float* pixel_tr
                     int cy=int(adisk_width*mod(scn.adisk_texture_rep*phi-M_PI,2.*M_PI)/(2.*M_PI));
                     int loc =(cx*adisk_width+cy)*CHANNEL_NUM;
 
-                    canalAlpha[k]=(float)adisk[loc+1]/255.;;  //Choix: on utilise la composante verte (le +1) pour reconstituer la transparence
+                    getDiskColor(&pixel_transpr[k],&pixel_transpg[k],&pixel_transpb[k],Temp,1.);//Obtenir la couleur
+
+                    canalAlpha[k]=(float)adisk[loc+1]/255.;  //Choix: on utilise la composante verte (le +1) pour reconstituer la transparence
                                     
                     k++;
                 }
