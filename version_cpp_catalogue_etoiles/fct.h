@@ -10,7 +10,7 @@ float FloatRand( float MaxVal )
     return ( (float)rand( ) / (float)RAND_MAX ) * MaxVal;
 }
 
-void asSpherical (float x, float y, float z,float* theta,float* phi)
+void cartesianToSpherical (float x, float y, float z,float* theta,float* phi)
 {
     *theta=acos(z);
     *phi=atan2(y,x);
@@ -18,7 +18,7 @@ void asSpherical (float x, float y, float z,float* theta,float* phi)
 }
 
 
-void asCartesian(float theta,float phi,float *x,float* y,float* z)
+void sphericalToCartesian(float theta,float phi,float *x,float* y,float* z)
 {
     float tmp=sin(theta);
     *x=tmp*cos(phi);
