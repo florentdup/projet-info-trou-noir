@@ -601,10 +601,17 @@ void sim(float posx, float posy,float posz, float xpixel,float ypixel,float* xp,
 
                     //Décalage en fréquence environ égal à "décalage en temperature" (lambdamax*Temperature=cste)(uniquement pour la couleur, pas pour l'intensité)
                     float Temp=Temp0*(1+beta*costhetadoppler)/sqrt(1-beta*beta);//Effet doppler
-                    //float Temp=Temp0;
+                  
 
 
+                    
                     //Temp=Temp*sqrt((1.-1/r)); //Redshift gravitationnel simple à calculer ds la metrique de Schwarzschild (depend uniquement de la position d'emmision du rayon( sur le disque))
+                    //calcul du redshift gravitationnel
+                    float gtt=1.-1./r;
+                    float gtphi=bh.a/r;
+                    float gphiphi=-(r*r+bh.a2+bh.a2/r);
+                    float omega=beta/r;//Vitsse angulaire
+                    Temp=Temp*sqrt(gtt+2*gtphi*omega+gphiphi*omega*omega); //Redshift gravitationnel simple à calculer ds la metrique de Schwarzschild (depend uniquement de la position d'emmision du rayon( sur le disque))
                     
                     
 
@@ -726,7 +733,7 @@ void sim_bundle(int i,int j,float x,float y,float z,float* pixelr,float* pixelg,
 
   
 
-    float range = 0.08 * 20. / (rdr.width - 1.0);
+    float range = 0.07 * 20. / (rdr.width - 1.0);
 
 
 
@@ -822,7 +829,7 @@ void sim_bundle(int i,int j,float x,float y,float z,float* pixelr,float* pixelg,
 
             
             //float b=dilatation*dilatation;
-            float b=5e-6/maxdist2;
+            float b=1e-6/maxdist2;
             *pixelr*=b;
             *pixelg*=b;
             *pixelb*=b;
@@ -844,7 +851,8 @@ void render(const char* name){
     
 
     pl::async_par_for(0, rdr.TotalChunknumber, [&](unsigned h){
-    printf("file %s - Chunk %03d started - %.2f% \n",name,h,100.*(float)Chunkcomputed/((float)rdr.TotalChunknumber));
+    //for (int h=0;h<rdr.TotalChunknumber;++h){
+    printf("file %s - Chunk %03d/%03d started - %.2f% \n",name,h,rdr.TotalChunknumber,100.*(float)Chunkcomputed/((float)rdr.TotalChunknumber));
     Chunkcomputed++;
 
     int j0=rdr.linesPerChunk*h;
@@ -858,26 +866,24 @@ void render(const char* name){
         float pixelr,pixelg,pixelb;   
 
         //Position initial du rayon à l'itération 0
-        x=scn.camera.x;
-        y=scn.camera.y;
-        z=scn.camera.z; 
 
         pixelr=0.;
         pixelg=0.;
         pixelb=0.; 
 
-        sim_bundle(i,j,x,y,z,&pixelr,&pixelg,&pixelb);
+        sim_bundle(i,j,scn.camera.x,scn.camera.y,scn.camera.z,&pixelr,&pixelg,&pixelb);
 
         int loc=(rdr.width*j+i)*CHANNEL_NUM;
 
 
-        image[loc]   =  pixelr;
+        image[loc]   = pixelr;
         image[loc+1] = pixelg;
         image[loc+2] = pixelb;
 
         } 
      }
     });
+    //}
 
 
      //Postprocess possible ici
@@ -913,13 +919,14 @@ void render(const char* name){
     
 
 int main() {
+    
 
     rdr.height=1080;
     rdr.width=1920;
-    rdr.R_inf=19.; //distance à partir de laquelle on considere etre a l'infini
+    rdr.R_inf=22.; //distance à partir de laquelle on considere etre a l'infini
 
-    rdr.linesPerChunk=5;
-    rdr.stepmax=0.009;
+    rdr.linesPerChunk=5;//Blocs de 5ligne traités en parallele
+    rdr.stepmax=0.001;
     rdr.stepmin=0.0005;
 
     rdr.maxtransparency=4;//Nombre de collision max pour un rayon
@@ -931,9 +938,9 @@ int main() {
 
     disk.R_min=bh.inner_orbit();
 
-    disk.R_max=15.;
-    disk.betamax=0.50;//Vitesse du disque au plus proche du trou noir (c'est la qu'est la vitesse max pour un profil de vitesse en /r^-1/2)
-    disk.TMax=10000.;//temperature du disque au plus proche du trou noir
+    disk.R_max=21.;
+    disk.betamax=0.7;//Vitesse du disque au plus proche du trou noir (c'est la qu'est la vitesse max pour un profil de vitesse en /r^-1/2)
+    disk.TMax=15000.;//temperature du disque au plus proche du trou noir
 
     scn.FOV=40.;
     
@@ -947,7 +954,7 @@ int main() {
     scn.generateSky();
 
     //Rendre une image fixe:
-    scn.camera.x=18.;
+    scn.camera.x=20.;
     scn.camera.y=0.;
     scn.camera.z=1.;
     scn.camera.theta=0.04;

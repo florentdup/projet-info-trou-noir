@@ -91,7 +91,7 @@ struct Rendu {
         R_inf2=R_inf*R_inf;
         R_min2=R_min*R_min;
 
-        TotalChunknumber=rdr.height/linesPerChunk;
+        TotalChunknumber=height/linesPerChunk;
 
         dstep=stepmax-stepmin;
         C=1./((R_inf-R_min)*(R_inf-R_min));
