@@ -80,16 +80,10 @@ void normalisepixel(float *rgbR, float *rgbG, float *rgbB)
 void getFinalColor(float *rgbR, float *rgbG, float *rgbB, float *pixel_transpr, float *pixel_transpg, float *pixel_transpb, float *canalAlpha, int nbCollision)
 {
 
-    *rgbR *= 200.; //Il faut multiplier par un grand nombre à cause du 1./(exp(29622.4/temperature)-1) qui donne la luminosité
-    *rgbG *= 200.;
-    *rgbB *= 200.;
     normalisepixel(rgbR, rgbG, rgbB);
 
     for (int l = nbCollision - 1; l >= 0; --l)
     {
-        pixel_transpr[l] *= 9.;
-        pixel_transpg[l] *= 9.;
-        pixel_transpb[l] *= 9.; //Il faut multiplier par un grand nombre à cause du 1./(exp(29622.4/temperature)-1) qui donne la luminosité
 
         normalisepixel(&pixel_transpr[l], &pixel_transpg[l], &pixel_transpb[l]);
 

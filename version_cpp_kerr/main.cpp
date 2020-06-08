@@ -3,6 +3,7 @@
 #include <math.h>
 #include <tgmath.h>
 #include <string.h>
+#include <fstream>
 
 using namespace std;
 
@@ -35,7 +36,7 @@ using namespace std;
 
 #define MAXITER 500000
 
-static const int n = 6; //Nombre de variables pour l'integration numerique
+static const int Neq = 6; //Nombre de variables pour l'integration numerique
 
 struct Rendu rdr;
 struct Scene scn;
@@ -43,44 +44,43 @@ struct Blackhole bh;
 struct Disk disk;
 
 int adisk_width, adisk_height, adisk_bpp;
-int colorScale_width, colorScale_height, colorScale_bpp;
-
 uint8_t *adisk = stbi_load("adisk_upscaled.png", &adisk_width, &adisk_height, &adisk_bpp, 3);
-uint8_t *colorScale = stbi_load("scale30000.png", &colorScale_width, &colorScale_height, &colorScale_bpp, 3); //Charger une echelle de couleur en fonction de la temperature
 
-float Tmax = 30000.; //Temperature max sur l'echelle en Kelvin
-float Tmin = 1000.;  //Temperature min sur l'echelle en Kelvin
+static const int SpectrumSampleSize = 76; //nombre d'échantillons
+float deltaWaveLength = 4.;               //(En nm, espacement des échantillons)
+float wavelengthSamples[SpectrumSampleSize], wavelengthSamples5[SpectrumSampleSize], sensitivitySamplesR[SpectrumSampleSize], sensitivitySamplesG[SpectrumSampleSize], sensitivitySamplesB[SpectrumSampleSize];
 
-
-//Obtenir la couleur d'une étoile à partir de sa temperature (en corrigeant la luminosité)
-//La variable brightness est un nombre quelconque pour amplifier la luminosité ou non
-void getStarColor(float *rgbR, float *rgbG, float *rgbB, float temperature, float brightness)
+void readSensitivityData(const char *filename, float *wavelengthSamples, float *wavelengthSamples5, float *sensitivitySamplesR, float *sensitivitySamplesG, float *sensitivitySamplesB)
 {
+    int cnt = 0;
+    ifstream source;       // build a read-Stream
+    source.open(filename); // open data
 
-    int c = int(((temperature - Tmin) * colorScale_width / (Tmax - Tmin)));
+    for (std::string line; std::getline(source, line);) //read stream line by line
+    {
+        std::istringstream in(line); //make a stream for the line itself
 
-    int loc = c * CHANNEL_NUM;
+        in >> wavelengthSamples[cnt] >> sensitivitySamplesR[cnt] >> sensitivitySamplesG[cnt] >> sensitivitySamplesB[cnt]; //now read the whitespace-separated floats
 
-    brightness *= 1. / (exp(29622.4 / temperature) - 1); //POur un corps noir dont le spectre est peu étalé
-
-    *rgbR += (float)colorScale[loc] * brightness; //Somme (l'intensité lumineuse des étoiles d'ajoute)
-    *rgbG += (float)colorScale[loc + 1] * brightness;
-    *rgbB += (float)colorScale[loc + 2] * brightness;
+        wavelengthSamples5[cnt] = pow(wavelengthSamples[cnt], 5);
+        cnt++;
+    }
 }
 
-//Pareil, mais sans somme pour le disque
-void getDiskColor(float *rgbR, float *rgbG, float *rgbB, float temperature, float brightness)
+void getBodyColor(float *rgbR, float *rgbG, float *rgbB, float temperature, float brightness)
 {
+    float I;
 
-    int c = int(((temperature - Tmin) * colorScale_width / (Tmax - Tmin)));
+    for (int l = 0; l < SpectrumSampleSize; ++l)
+    {
 
-    int loc = c * CHANNEL_NUM;
+        I = (6.e14 / wavelengthSamples5[l]) / exp(1.43913e7 / (wavelengthSamples[l] * temperature) - 1.) * brightness; //6e14 pour renormaliser les composante des pixels
 
-    brightness *= 1. / (exp(29622.4 / temperature) - 1); //Pour un corps noir dont le spectre est peu étalé
-
-    *rgbR = (float)colorScale[loc] * brightness;
-    *rgbG = (float)colorScale[loc + 1] * brightness;
-    *rgbB = (float)colorScale[loc + 2] * brightness;
+        I *= deltaWaveLength;
+        *rgbR += sensitivitySamplesR[l] * I;
+        *rgbG += sensitivitySamplesG[l] * I;
+        *rgbB += sensitivitySamplesB[l] * I;
+    }
 }
 
 //Affiche une grille sur le disque
@@ -90,10 +90,10 @@ void getDiskColorGrid(float phi, float r, float *rgbR, float *rgbG, float *rgbB)
 
     bool a = int((100 * phi)) % 2; //100 alternances de couleur par tour
 
-    bool b = ((r - disk.R_min) / (disk.R_max - disk.R_min) > .5); //Séparer le disque en 2 radialement 
+    bool b = ((r - disk.R_min) / (disk.R_max - disk.R_min) > .5); //Séparer le disque en 2 radialement
 
-    if (a ^ b)//Ou exclusif
-    { 
+    if (a ^ b) //Ou exclusif
+    {
         *rgbR = 255.;
         *rgbG = 0.;
     }
@@ -254,14 +254,14 @@ void sim(float r0, float theta0, float phi0, float xpixel, float ypixel, float *
 
     //Euler
 
-    //float y[6];
-    //float dydx[6];
+    //float y[Neq];
+    //float dydx[Neq];
 
     //RK4
-    float y[6];
-    float ak[6];
-    float dydx1[6], dydx2[6], dydx3[6], dydx4[6];
-    float ytemp[6];
+    float y[Neq];
+    float ak[Neq];
+    float dydx1[Neq], dydx2[Neq], dydx3[Neq], dydx4[Neq];
+    float ytemp[Neq];
 
     float L, kappa;
 
@@ -281,7 +281,7 @@ void sim(float r0, float theta0, float phi0, float xpixel, float ypixel, float *
         currentStep = rdr.step(y[0]);
 
         //Euler
-        /*for (int l = 0; l < 6; l++)
+        /*for (int l = 0; l < Neq; l++)
 	    {
 		    float hdydx = currentStep * dydx[l];
 		    y[l] = y[l] + hdydx;
@@ -291,25 +291,25 @@ void sim(float r0, float theta0, float phi0, float xpixel, float ypixel, float *
 
         //RK4
         geodesic(L, kappa, y, ak);
-        for (l = 0; l < 6; ++l)
+        for (l = 0; l < Neq; ++l)
         {
             dydx1[l] = ak[l];
             ytemp[l] = y[l] + .5 * currentStep * ak[l];
         }
         geodesic(L, kappa, ytemp, ak);
-        for (l = 0; l < 6; ++l)
+        for (l = 0; l < Neq; ++l)
         {
             dydx2[l] = ak[l];
             ytemp[l] = y[l] + .5 * currentStep * ak[l];
         }
         geodesic(L, kappa, ytemp, ak);
-        for (l = 0; l < 6; ++l)
+        for (l = 0; l < Neq; ++l)
         {
             dydx3[l] = ak[l];
             ytemp[l] = y[l] + currentStep * ak[l];
         }
         geodesic(L, kappa, ytemp, ak);
-        for (l = 0; l < 6; ++l)
+        for (l = 0; l < Neq; ++l)
         {
             dydx4[l] = ak[l];
             dydx1[l] = currentStep / 6. * (dydx1[l] + 2. * dydx2[l] + 2. * dydx3[l] + dydx4[l]); //Recuperer une bonne approx de la derivée dans dydx1
@@ -368,11 +368,16 @@ void sim(float r0, float theta0, float phi0, float xpixel, float ypixel, float *
                     Temp = Temp * sqrt(gtt + 2 * gtphi * omega + gphiphi * omega * omega); //Redshift gravitationnel
 
                     //Recuperer la texture du disque à cet endroit, qu'on utilise uniquemenet pour obtenir la transparence du disque
-                    int cx = int((r - disk.R_min) * adisk_height / (disk.R_max - disk.R_min));
-                    int cy = int(adisk_width * mod(disk.texture_rep * phi - M_PI, 2. * M_PI) / (2. * M_PI));
+                    int cx = int((r - disk.R_min) * (adisk_height - 1) / (disk.R_max - disk.R_min));
+                    int cy = int((adisk_width - 1) * mod(disk.texture_rep * phi - M_PI, 2. * M_PI) / (2. * M_PI));
+
                     int loc = (cx * adisk_width + cy) * CHANNEL_NUM;
 
-                    getDiskColor(&pixel_transpr[k], &pixel_transpg[k], &pixel_transpb[k], Temp, 1.); //Obtenir la couleur
+                    pixel_transpr[k] = 0.;
+                    pixel_transpg[k] = 0.;
+                    pixel_transpb[k] = 0.;
+
+                    getBodyColor(&pixel_transpr[k], &pixel_transpg[k], &pixel_transpb[k], Temp, 1.); //Obtenir la couleur
 
                     canalAlpha[k] = (float)adisk[loc + 1] / 255.; //Choix: on utilise la composante verte (le +1) pour reconstituer la transparence
 
@@ -381,7 +386,7 @@ void sim(float r0, float theta0, float phi0, float xpixel, float ypixel, float *
 #if ADISK_GRID == 1
 
                     getDiskColorGrid(phi, r, &pixel_transpr[k], &pixel_transpg[k], &pixel_transpb[k]); //Motif de grille sur le disque et calcul de la transparence
-
+                    canalAlpha[0] = 1.;
 #endif
 
                     k++;
@@ -396,7 +401,7 @@ void sim(float r0, float theta0, float phi0, float xpixel, float ypixel, float *
     if (*ReachedInfinity)
     {
         //Pour visualiser quels rayons ont atteints R_inf
-        //*nbCollision=1;  
+        //*nbCollision=1;
         //pixel_transpr[0]=255;
         //canalAlpha[0]=.5;
 
@@ -412,13 +417,13 @@ void sim_opt(float r0, float theta0, float phi0, float xpixel, float ypixel, flo
     int N = 0;
 
     //Euler
-    //float y[6];
-    //float dydx[6];
+    //float y[Neq];
+    //float dydx[Neq];
 
     //RK4
-    float y[6], ak[6];
-    float dydx1[6], dydx2[6], dydx3[6], dydx4[6];
-    float ytemp[6];
+    float y[Neq], ak[Neq];
+    float dydx1[Neq], dydx2[Neq], dydx3[Neq], dydx4[Neq];
+    float ytemp[Neq];
 
     float L, kappa;
 
@@ -436,7 +441,7 @@ void sim_opt(float r0, float theta0, float phi0, float xpixel, float ypixel, flo
         currentStep = rdr.step(y[0]);
 
         //Euler
-        /*for (int l = 0; l < 6; l++)
+        /*for (int l = 0; l < Neq; l++)
 	    {
 		    float hdydx = currentStep * dydx[l];
 		    y[l] = y[l] + hdydx;
@@ -446,25 +451,25 @@ void sim_opt(float r0, float theta0, float phi0, float xpixel, float ypixel, flo
         //RK4
 
         geodesic(L, kappa, y, ak);
-        for (l = 0; l < 6; ++l)
+        for (l = 0; l < Neq; ++l)
         {
             dydx1[l] = ak[l];
             ytemp[l] = y[l] + .5 * currentStep * ak[l];
         }
         geodesic(L, kappa, ytemp, ak);
-        for (l = 0; l < 6; ++l)
+        for (l = 0; l < Neq; ++l)
         {
             dydx2[l] = ak[l];
             ytemp[l] = y[l] + .5 * currentStep * ak[l];
         }
         geodesic(L, kappa, ytemp, ak);
-        for (l = 0; l < 6; ++l)
+        for (l = 0; l < Neq; ++l)
         {
             dydx3[l] = ak[l];
             ytemp[l] = y[l] + currentStep * ak[l];
         }
         geodesic(L, kappa, ytemp, ak);
-        for (l = 0; l < 6; ++l)
+        for (l = 0; l < Neq; ++l)
         {
             dydx4[l] = ak[l];
             dydx1[l] = currentStep / 6. * (dydx1[l] + 2. * dydx2[l] + 2. * dydx3[l] + dydx4[l]); //Recuperer une bonne aprrox de la derivée
@@ -512,8 +517,8 @@ void sim_bundle(int i, int j, float x, float y, float z, float *pixelr, float *p
     ypcentref = ypcentre0;
     zpcentref = zpcentre0;
 
-    //float range = 0.075 * 20. / (rdr.width - 1.0); //FOV
-    float range = 0.1 * 20. / (rdr.width - 1.0);
+    float range = 0.075 * 20. / (rdr.width - 1.0); //FOV
+    //float range = 0.1 * 20. / (rdr.width - 1.0);
 
     float xpixel = -(i - (rdr.width + 1.0) / 2) * range;
     float ypixel = -(j - (rdr.height + 1.0) / 2) * range;
@@ -583,7 +588,7 @@ void sim_bundle(int i, int j, float x, float y, float z, float *pixelr, float *p
     }
 
     if (ReachedInfinity)
-    { //Si pas un seul des rayons du groupe n'est tombé dans le trou noir, on regarde quels etoiles sont dans le cercle formé par le faisceau sur le ciel
+    { //Si tous les rayons se sont échappés, on regarde quels étoiles sont dans le cercle formé par le faisceau sur le ciel
 
         float maxdist = sqrt(maxdist2);
         float sqrdistanceToStar; //sqrnorm(scn.starx[i]-xpcentref,scn.stary[i]-ypcentref,scn.starz[i]-zpcentref);
@@ -606,7 +611,7 @@ void sim_bundle(int i, int j, float x, float y, float z, float *pixelr, float *p
                         sqrdistanceToStar = sqrnorm(c1, c2, c3);
                         if (sqrdistanceToStar < maxdist2)
                         {
-                            getStarColor(pixelr, pixelg, pixelb, scn.starTemp[i], scn.starBrightness[i]); //(Récupere la couleur et effectue l'addition composante par composante)
+                            getBodyColor(pixelr, pixelg, pixelb, scn.starTemp[i], scn.starBrightness[i] * 12.); //(Récupere la couleur et effectue l'addition composante par composante)
                         }
                     }
                 }
@@ -618,11 +623,10 @@ void sim_bundle(int i, int j, float x, float y, float z, float *pixelr, float *p
         *pixelg *= b;
         *pixelb *= b;
     }
-
-    getFinalColor(pixelr, pixelg, pixelb, pixel_transpr, pixel_transpg, pixel_transpb, canalAlpha, nbCollision); // Calcul de transparence
 #endif
-
-#if DRAWGRID == 1
+#if DRAWGRID == 0
+    getFinalColor(pixelr, pixelg, pixelb, pixel_transpr, pixel_transpg, pixel_transpb, canalAlpha, nbCollision); // Calcul de transparence
+#else
     getFinalColorGrid(xpcentref, ypcentref, zpcentref, pixelr, pixelg, pixelb, pixel_transpr, pixel_transpg, pixel_transpb, nbCollision, ReachedInfinity); // Calcul de la transparence, et calcul de la couleur de la grille
 #endif
 }
@@ -645,8 +649,9 @@ void render(const char *name)
 
             for (int i = 0; i < rdr.width; ++i)
             {
+
                 //if ((i>.3*rdr.width) && (i<0.55*rdr.width) && (j>0.1*rdr.height) && (j<0.55*rdr.height)){//calculer des petites portions pour faire des tests
-                //if ((i>.5*rdr.width) && (i<0.85*rdr.width) && (j>0.4*rdr.height) && (j<0.55*rdr.height)){
+                //if ((i>.0*rdr.width) && (i<0.05*rdr.width) && (j>0.*rdr.height) && (j<0.05*rdr.height)){
 
                 float pixelr, pixelg, pixelb;
 
@@ -710,7 +715,7 @@ int main()
     rdr.stepmax = 0.02;
     rdr.stepmin = 0.007;
 
-    rdr.delta = .9; //Ecart angulaire (en pixel) entre les rayons d'un même faisceau
+    rdr.delta = .5; //Ecart angulaire (en pixel) entre les rayons d'un même faisceau
 
     bh.a = 0.5;   //spin (adimensionné,entre 0 et 1)
     bh.precalc(); //A executer avant inner orbit
@@ -739,12 +744,22 @@ int main()
     /*scn.camera.theta=0.04;
     scn.camera.phi=0.01;*/
 
+    readSensitivityData("sensitivity.txt", wavelengthSamples, wavelengthSamples5, sensitivitySamplesR, sensitivitySamplesG, sensitivitySamplesB);
+
+    /*for (int l = 0; l < SpectrumSampleSize; ++l)
+    {
+        printf("WL:%f R:%f, G:%f B:%f \n",wavelengthSamples[l],sensitivitySamplesR[l],sensitivitySamplesG[l],sensitivitySamplesB[l]);
+    }*/
+
+    //float R,G,B;
+    //getBodyColor(&R,&G,&B,6000,1.);
+    //printf("R:%f G:%f, B:%f \n",R,G,B);
+
     printf("Start \n");
     render("resultat.png");
     printf("End \n");
 
     stbi_image_free(adisk);
-    stbi_image_free(colorScale);
 
     return 0;
 }
