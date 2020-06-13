@@ -2,7 +2,8 @@
 #include <iostream>
 #include <math.h>
 #include <tgmath.h>
-#include <string.h>
+#include <string>
+#include <fstream>
 
 
 using namespace std;
@@ -264,29 +265,34 @@ void render(char* name){
 
 int main() {
 
-    rdr.height=1080;
-    rdr.width=1920;
-    rdr.R_schwarzschild=1.;
-    rdr.R_inf=15.; //distance à partir de laquelle on considere etre a l'infini
-    rdr.step=0.05;
-    rdr.maxtransparency=6;
-
-    scn.RAdisk_min=2.;
-    scn.RAdisk_max=5.;
-    scn.FOV=40.;
+    std::string const monFichier("mesVariables.txt");
+    ifstream monFlux(monFichier.c_str()) ;
+    if (monFlux)
+    {
     
-    scn.adisk_texture_rep=8.;
+    monFlux>>rdr.height;
+    monFlux>>rdr.width;
+    monFlux>>rdr.R_schwarzschild;
+    monFlux>>rdr.R_inf; //distance à partir de laquelle on considere etre a l'infini
+    monFlux>>rdr.step;
+    monFlux>>rdr.maxtransparency;
+
+    monFlux>>scn.RAdisk_min;
+    monFlux>>scn.RAdisk_max;
+    monFlux>>scn.FOV;
+    
+    monFlux>>scn.adisk_texture_rep;
 
     rdr.initRendering();//quleques calculs pour avoir les carrés de certaines qtité et le fov en radian etc..
     scn.initScene(rdr.width);
 
     //Rendre une image fixe:
 
-    scn.camera.x=-13.;
+    monFlux>>scn.camera.x;
     //scn.camera.y=0.;
-    scn.camera.z=1.;
-    scn.camera.theta=0.04;
-    scn.camera.phi=0.;
+    monFlux>>scn.camera.z;
+    monFlux>>scn.camera.theta;
+    monFlux>>scn.camera.phi;
 
     render("resultat.png");
 
@@ -330,6 +336,12 @@ int main() {
     stbi_image_free(adisk);
 
     return 0;
+    }
+    else
+    {
+        cout<<"ERREUR : Le fichier ne s'est pas ouvert correctement."<<endl;
+    }
+    
 }
 
 
