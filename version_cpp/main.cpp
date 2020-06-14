@@ -4,6 +4,7 @@
 #include <tgmath.h>
 #include <string>
 #include <fstream>
+#include <vector>
 
 
 using namespace std;
@@ -89,9 +90,9 @@ void sim(float x, float y,float z, float theta0,float phi0,int* pixelr,int* pixe
     float r2=x*x+y*y+z*z;
     float r6;
     float oldz; //#pour detecter le passage à travers le plan z=0 (pour tracer le disque)
-    float pixel_transpr[rdr.maxtransparency];
-    float pixel_transpg[rdr.maxtransparency];
-    float pixel_transpb[rdr.maxtransparency];
+    vector<float> pixel_transpr (rdr.maxtransparency);
+    vector<float> pixel_transpg(rdr.maxtransparency);
+    vector<float> pixel_transpb(rdr.maxtransparency);
     int k=0;
 
     float xp,yp,zp;
@@ -244,9 +245,9 @@ void render(char* name){
         //int loc=(j*background_width+i)*3;
         
 
-         image[index++] = pixelr;
-         image[index++] = pixelg;
-         image[index++] = pixelb;
+        image[index++] = pixelr;
+        image[index++] = pixelg;
+        image[index++] = pixelb;
 
         }
         if (j%10==0){
