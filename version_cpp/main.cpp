@@ -201,7 +201,7 @@ void sim(float x, float y,float z, float theta0,float phi0,int* pixelr,int* pixe
         
 }
 
-void render(char* name){
+void render(const char* name){
     uint8_t* image = new uint8_t[rdr.width * rdr.height * CHANNEL_NUM];
     
     int index = 0;
@@ -266,8 +266,7 @@ void render(char* name){
 
 int main() {
 
-    std::string const monFichier("mesVariables.txt");
-    ifstream monFlux(monFichier.c_str()) ;
+    ifstream monFlux("mesVariables.txt") ;
     if (monFlux)
     {
     
@@ -295,7 +294,8 @@ int main() {
     monFlux>>scn.camera.theta;
     monFlux>>scn.camera.phi;
 
-    render("resultat.png");
+    string nom("resultat.png");
+    render(nom.c_str());;
 
 
 
