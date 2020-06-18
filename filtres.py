@@ -1,35 +1,52 @@
 import numpy as np
-import skimage
 from skimage import io, transform
-import scipy.optimize as op
-from scipy.ndimage import percentile_filter, gaussian_filter,  gaussian_gradient_magnitude
+from scipy.ndimage import gaussian_filter,  gaussian_gradient_magnitude
 import time
 import matplotlib.pyplot as plt
 
-image_complete = io.imread("resultat_retouche.png")
-image_complete = image_complete[:,:,0:3]
+d=time.time()
 
-def filtres(image, reduction=5):
-    image = skimage.transform.resize(image, (image.shape[0]/reduction,image.shape[1]/reduction,image.shape[2]))
-    image = gaussian_filter(image, sigma=1)
-    contours= gaussian_gradient_magnitude(image, 250/reduction)
+image_complete = io.imread("resultat_retouche.png")
+image_complete = image_complete[:,:,:3] #enlever la composante de transparence
+
+def filtres(image, outputres):
+    image=transform.resize(image_complete,outputres,anti_aliasing=True)
+    imageLowRes=transform.resize(image_complete,(270,480),anti_aliasing=True)
+
+    #Masques a ajouter en basse résolution
+    f=1920./imageLowRes.shape[0]
+    print("début filtre ",time.time()-d)
+    f1=time.time()
+    coeff_sat = 0.3
+    saturation = np.copy(imageLowRes)
+    saturation[saturation>coeff_sat]=1
+    saturation[saturation<=coeff_sat]=0
+    print("saturation de l'image ", time.time()-f1)
+    f1=time.time()
+    contours= gaussian_gradient_magnitude(saturation, 250/f)
     contours[:,:,1]=0.4*contours[:,:,1]
-    contours[:,:,2]=0*contours[:,:,2]
-    io.imsave("contours.png",contours)
-    print('gradient gaussien : ok')
-    pourcent = percentile_filter(image, percentile=20, size = int(100/reduction))
-    io.imsave("pourcent.png",pourcent)
-    print('filtre pourcent : ok')
-    contours2 = gaussian_filter(pourcent, sigma = 500/reduction)
+    contours[:,:,2]=0.
+    print("gradient gaussien ", time.time()-f1)
+    f1=time.time()
+    contours2 = gaussian_filter(saturation, sigma = 500/f)
     contours2[:,:,1]=0.8*contours2[:,:,1]
     contours2[:,:,2]=0.3*contours2[:,:,2]
-    io.imsave("contours2.png",contours2)
-    image_filtree = image+3*contours2+300/reduction*contours
+    print("gaussien ",time.time()-f1)
+    f1=time.time()
+
+    #Les mettres à la même resolution que l'image de sortie
+    
+    contoursup=transform.resize(contours,outputres,anti_aliasing=True)
+    contours2up=transform.resize(contours2,outputres,anti_aliasing=True)
+
+    image_filtree = image+2*contours2up+30/f*contoursup
     image_filtree[image_filtree>1]=1
+    print("saturation de l'image ",time.time()-f1)
     return image_filtree
 
-image_filtree = filtres(image_complete)
-print(image_filtree.shape)
-plt.imshow(image_filtree)
+image_filtree = filtres(image_complete,(1080,1920))
 
-io.imsave("image_filtree_kerr_4.png",image_filtree)
+io.imsave("image_filtree.png",image_filtree)
+
+f=time.time()
+print(f"Temps d'exécution de {f-d} s ")
