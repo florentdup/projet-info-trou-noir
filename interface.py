@@ -33,35 +33,44 @@ def start_window():
 
     # Parametre de Kerr
     var_a = DoubleVar()
-    a = Scale(params,from_=0.05,to=0.5,digits=2, variable = var_a, resolution=0.01, orient=HORIZONTAL, label="Parametre de Kerr",length=200)
+    a = Scale(params,from_=0.0,to=.99,digits=2, variable = var_a, resolution=0.01, orient=HORIZONTAL, label="Parametre de Kerr",length=200)
+    a.set(.5)
     a.grid(row=2,rowspan=2,column=0,sticky=W)
 
-    # Rayon du disque d'accrétion
-    RAdisk = Scale(params,from_=2,to=6,orient=HORIZONTAL,label="Rayon du disque d'accrétion",length=200)
+    # Rayon maximal disque d'accrétion
+    RAdisk = Scale(params,from_=3,to=25,orient=HORIZONTAL,label="Rayon maximal du disque d'accrétion",length=200,resolution=0.01)
     RAdisk.grid(row=4,column=0,sticky=W)
+    RAdisk.set(16.)
 
     # position de la caméra
-    camera_pos_x = Scale(params,from_=-20,to=20,orient=HORIZONTAL,label="Coordonnée x de la caméra",length=200)
+    camera_pos_x = Scale(params,from_=-25,to=25,orient=HORIZONTAL,label="Coordonnée x de la caméra",length=200,resolution=0.01)
     camera_pos_x.grid(row=4,column=1,sticky=W)
+    camera_pos_x.set(20)
 
-    camera_pos_y = Scale(params,from_=-20,to=20,orient=HORIZONTAL,label="Coordonnée y de la caméra",length=200)
+
+    camera_pos_y = Scale(params,from_=-25,to=25,orient=HORIZONTAL,label="Coordonnée y de la caméra",length=200,resolution=0.01)
     camera_pos_y.grid(row=5,column=1,sticky=W)
+    camera_pos_y.set(0)
 
-    camera_pos_z = Scale(params,from_=-20,to=20,orient=HORIZONTAL,label="Coordonnée z de la caméra",length=200)
+    camera_pos_z = Scale(params,from_=-25,to=25,orient=HORIZONTAL,label="Coordonnée z de la caméra",length=200,resolution=0.01)
     camera_pos_z.grid(row=6,column=1,sticky=W)
+    camera_pos_z.set(1.2)
 
     # Rayon max du disque
-    R_max = Scale(params,from_=8,to=32,orient=HORIZONTAL,label="Rayon maximal du disque",length=200)
-    R_max.grid(row=5,column=0,sticky=W)
-    print(type(R_max))
+    #R_max = Scale(params,from_=8,to=32,orient=HORIZONTAL,label="Rayon maximal du disque",length=200)
+    #R_max.grid(row=5,column=0,sticky=W)
+    #print(type(R_max))
 
     d = [camera_pos_x.get(), camera_pos_y.get(), camera_pos_z.get()]
     d = np.array(d)
     d = np.linalg.norm(d)
 
     # Rayon à l'infini : il faut implémenter un callback ou une binding methode
-    R_inf = Scale(params,from_= max(R_max.get(),d), to=100,orient=HORIZONTAL,label="Rayon à l'infini",length=200)
-    R_inf.grid(row=6,column=0,sticky=W)
+    R_inf = Scale(params,from_= max(15.,RAdisk.get(),d), to=40,orient=HORIZONTAL,label="Rayon à l'infini",length=200,resolution=0.01)
+    R_inf.grid(row=5,column=0,sticky=W)
+
+    checkbutton=Checkbutton(params, text="sur-échantillonage")
+    checkbutton.grid(row=6,column=0, sticky=W)
 
     # résolution
     listres = [f"384,216",f"960,540",f"1920,1080"]
@@ -83,7 +92,7 @@ bouton_commencer = Button(fenetre, text = 'Commencer', command=start_window, bg=
 bouton_commencer.pack(pady=5 )
 
 
-img = ImageTk.PhotoImage(Image.open("C:\\Users\\camil\\Desktop\\Mines 2019-2020\\Info\\projet\\image_filtree_kerr_3.png"))
+img = ImageTk.PhotoImage(Image.open("resultattst.png"))
 panel = Label(fenetre, image = img,bg='black')
 panel.pack(ipady=0,ipadx=0,padx=20)
 
