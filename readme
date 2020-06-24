@@ -1,2 +1,8 @@
 http://rantonels.github.io/starless/ -->Version python
 https://www.codeproject.com/Articles/994466/Ray-Tracing-a-Black-Hole-in-Csharp -->pour les équations dans la métrique de Kerr
+
+Pour exécuter le code : vérifier l'installation de boost.python. Modifier le dossier .vscode si l'installation ne marche pas, 
+en indiquant vos chemins dans l'ordinateur.
+
+Pour compiler les fichiers : se placer à hauteur du dossier version_cpp_kerr et créer un dossier build. Se placer dans ce dossier build.
+Exécuter les commmandes cmake .. puis make. Se placer dans build/version_cpp_kerr. Exécuter le fichier kerr.py.
