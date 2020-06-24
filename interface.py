@@ -8,6 +8,7 @@ import numpy as np
 
 ## page d'accueil
 
+
 fenetre = Tk()
 fenetre.title('projet trou noir')
 fenetre.configure(background="black")
@@ -17,6 +18,8 @@ label1.pack(pady=10,padx=20)
 
 label2 = Label(fenetre, text="par Florent Dupont, Marie-Clémentine Quilleriet \n et Camille Srecki", font=("Calibri", 11), bg='black', fg='white')
 label2.pack(padx=10, pady=5)
+
+
 
 def start_window():
     params = Toplevel(fenetre,padx=5,pady=5)
@@ -34,34 +37,46 @@ def start_window():
     # Parametre de Kerr
     var_a = DoubleVar()
     a = Scale(params,from_=0.05,to=0.5,digits=2, variable = var_a, resolution=0.01, orient=HORIZONTAL, label="Parametre de Kerr",length=200)
+    a.set(.5)
     a.grid(row=2,rowspan=2,column=0,sticky=W)
 
-    # Rayon du disque d'accrétion
-    RAdisk = Scale(params,from_=2,to=6,orient=HORIZONTAL,label="Rayon du disque d'accrétion",length=200)
+    # Rayon maximal disque d'accrétion
+    RAdisk = Scale(params,from_=3,to=25,orient=HORIZONTAL,label="Rayon maximal du disque d'accrétion",length=200,resolution=0.01)
     RAdisk.grid(row=4,column=0,sticky=W)
+    RAdisk.set(16.)
 
     # position de la caméra
-    camera_pos_x = Scale(params,from_=-20,to=20,orient=HORIZONTAL,label="Coordonnée x de la caméra",length=200)
+    camera_pos_x = Scale(params,from_=-25,to=25,orient=HORIZONTAL,label="Coordonnée x de la caméra",length=200,resolution=0.01)
     camera_pos_x.grid(row=4,column=1,sticky=W)
+    camera_pos_x.set(20)
 
-    camera_pos_y = Scale(params,from_=-20,to=20,orient=HORIZONTAL,label="Coordonnée y de la caméra",length=200)
+
+    camera_pos_y = Scale(params,from_=-25,to=25,orient=HORIZONTAL,label="Coordonnée y de la caméra",length=200,resolution=0.01)
     camera_pos_y.grid(row=5,column=1,sticky=W)
+    camera_pos_y.set(0)
 
-    camera_pos_z = Scale(params,from_=-20,to=20,orient=HORIZONTAL,label="Coordonnée z de la caméra",length=200)
+    camera_pos_z = Scale(params,from_=-25,to=25,orient=HORIZONTAL,label="Coordonnée z de la caméra",length=200,resolution=0.01)
     camera_pos_z.grid(row=6,column=1,sticky=W)
+    camera_pos_z.set(1.2)
 
     # Rayon à l'infini : il faut implémenter un callback ou une binding methode
 
-    R_inf = Scale(params,from_= 40, to=100,orient=HORIZONTAL,label="Rayon à l'infini",length=200)
-    R_inf.grid(row=6,column=0,sticky=W)
+    d = [camera_pos_x.get(), camera_pos_y.get(), camera_pos_z.get()]
+    d = np.array(d)
+    d = np.linalg.norm(d)
 
-    # Rayon max du disque
-    R_max = Scale(params,from_=8,to=32,orient=HORIZONTAL,label="Rayon maximal du disque",length=200)
-    R_max.grid(row=5,column=0,sticky=W)
-    print(type(R_max))
+    R_inf = Scale(params,from_= max(15.,RAdisk.get(),d), to=40,orient=HORIZONTAL,label="Rayon à l'infini",length=200,resolution=0.01)
+    R_inf.grid(row=5,column=0,sticky=W)
+
+    checkbuttonsurech=ttk.Checkbutton(params, text="sur-échantillonage")
+    checkbuttonsurech.grid(row=6,column=0, sticky=W)
+    checkbuttonsurech.state(['!alternate'],)
+    checkbuttonsurech.state(['selected'])
+
 
     # résolution
     listres = [f"384,216",f"960,540",f"1920,1080"]
+    print(listres)
     variable = StringVar(params)
     variable.set(listres[2])
     res = OptionMenu(params,variable,*listres)
@@ -69,14 +84,16 @@ def start_window():
     res.grid(row=3,column=1)
     label.grid(row=2,column=1)
 
-    # Mode : afficher l'image filtrée ou non
-    filtre = Checkbutton(params,text="Afficher l'image filtrée")
-    filtre.grid(row=7,columnspan=2,pady=5)
 
     #bouton de lancement
     def demarrer_programme():
+        paramresolution=variable.get()
+        if checkbuttonsurech.instate(['selected']):
+            tmp=variable.get()[:].split(',') #Faire une copie de la string, puis la séparer
+            paramresolution=str(int(tmp[0])*2)+','+str(int(tmp[1])*2)             
+    
         liste_param = open("params.txt",'w')
-        liste_param.write(f"{a.get()},{RAdisk.get()},{camera_pos_x.get()},{camera_pos_y.get()},{camera_pos_z.get()},{R_max.get()},{R_inf.get()},{variable.get()}")
+        liste_param.write(f"{a.get()},{RAdisk.get()},{camera_pos_x.get()},{camera_pos_y.get()},{camera_pos_z.get()},{R_inf.get()},{paramresolution}")
         liste_param.close()
         return liste_param
 
@@ -100,6 +117,3 @@ label3.pack(padx=10,pady=10)
 #bouton_biblio.pack(pady=10)
 
 fenetre.mainloop()
-
-#filtre : true = appel à filtre
-#false : imshow image initiale
