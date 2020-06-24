@@ -4,7 +4,7 @@
 #include <tgmath.h>
 #include <string.h>
 #include <fstream>
-
+#include <stdlib.h>
 using namespace std;
 
 #ifndef M_PI
@@ -639,7 +639,7 @@ void render(const char *name)
 
     pl::async_par_for(0, rdr.TotalChunknumber, [&](unsigned h) {
         //for (int h=0;h<rdr.TotalChunknumber;++h){ //A utiliser si jamais pl async ne marche pas
-        printf("file %s - Chunk %03d/%03d started - %.2f% \n", name, h, rdr.TotalChunknumber, 100. * (float)Chunkcomputed / ((float)rdr.TotalChunknumber));
+        cout<<"file "<< name <<"- Chunk "<< h <<"/"<< rdr.TotalChunknumber<<" started - "<< 100. * (float)Chunkcomputed / ((float)rdr.TotalChunknumber) <<"%"<<endl;  
         Chunkcomputed++;
 
         int j0 = rdr.linesPerChunk * h;
@@ -698,11 +698,15 @@ void render(const char *name)
     stbi_write_png(name, rdr.width, rdr.height, CHANNEL_NUM, image_byte, rdr.width * CHANNEL_NUM);
 }
 
-int main()
+int image()
 {
 
-    rdr.height = 1080;
-    rdr.width = 1920;
+    if (adisk==NULL)
+    {
+    exit(0);
+    }
+    rdr.height = 108;
+    rdr.width = 192;
     rdr.R_inf = 21.5; //distance à partir de laquelle on considere etre a l'infini
 
     rdr.linesPerChunk = 5; //Blocs de 5 ligne traités en parallele
@@ -755,11 +759,25 @@ int main()
     //getBodyColor(&R,&G,&B,6000,1.);
     //printf("R:%f G:%f, B:%f \n",R,G,B);
 
-    printf("Start \n");
+    cout<<"Start"<<endl;
     render("resultat.png");
-    printf("End \n");
+    cout<<"End"<<endl;
 
     stbi_image_free(adisk);
 
     return 0;
+}
+
+/*int main()
+{
+    image();
+    return 0;
+}*/
+
+#include<boost/python.hpp> 
+
+BOOST_PYTHON_MODULE(kerr)
+{
+    using namespace boost::python;
+    def("image", image);
 }
