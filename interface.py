@@ -19,7 +19,7 @@ label2 = Label(fenetre, text="par Florent Dupont, Marie-Clémentine Quilleriet \
 label2.pack(padx=10, pady=5)
 
 def start_window():
-    params = Toplevel(padx=5,pady=5)
+    params = Toplevel(fenetre,padx=5,pady=5)
     params.title = ('choix des parametres')
 
     label = Label(params, text='Choisissez les paramètres de la simulation :', font=("Calibri Bold", 12))
@@ -33,44 +33,32 @@ def start_window():
 
     # Parametre de Kerr
     var_a = DoubleVar()
-    a = Scale(params,from_=0.0,to=.99,digits=2, variable = var_a, resolution=0.01, orient=HORIZONTAL, label="Parametre de Kerr",length=200)
-    a.set(.5)
+    a = Scale(params,from_=0.05,to=0.5,digits=2, variable = var_a, resolution=0.01, orient=HORIZONTAL, label="Parametre de Kerr",length=200)
     a.grid(row=2,rowspan=2,column=0,sticky=W)
 
-    # Rayon maximal disque d'accrétion
-    RAdisk = Scale(params,from_=3,to=25,orient=HORIZONTAL,label="Rayon maximal du disque d'accrétion",length=200,resolution=0.01)
+    # Rayon du disque d'accrétion
+    RAdisk = Scale(params,from_=2,to=6,orient=HORIZONTAL,label="Rayon du disque d'accrétion",length=200)
     RAdisk.grid(row=4,column=0,sticky=W)
-    RAdisk.set(16.)
 
     # position de la caméra
-    camera_pos_x = Scale(params,from_=-25,to=25,orient=HORIZONTAL,label="Coordonnée x de la caméra",length=200,resolution=0.01)
+    camera_pos_x = Scale(params,from_=-20,to=20,orient=HORIZONTAL,label="Coordonnée x de la caméra",length=200)
     camera_pos_x.grid(row=4,column=1,sticky=W)
-    camera_pos_x.set(20)
 
-
-    camera_pos_y = Scale(params,from_=-25,to=25,orient=HORIZONTAL,label="Coordonnée y de la caméra",length=200,resolution=0.01)
+    camera_pos_y = Scale(params,from_=-20,to=20,orient=HORIZONTAL,label="Coordonnée y de la caméra",length=200)
     camera_pos_y.grid(row=5,column=1,sticky=W)
-    camera_pos_y.set(0)
 
-    camera_pos_z = Scale(params,from_=-25,to=25,orient=HORIZONTAL,label="Coordonnée z de la caméra",length=200,resolution=0.01)
+    camera_pos_z = Scale(params,from_=-20,to=20,orient=HORIZONTAL,label="Coordonnée z de la caméra",length=200)
     camera_pos_z.grid(row=6,column=1,sticky=W)
-    camera_pos_z.set(1.2)
-
-    # Rayon max du disque
-    #R_max = Scale(params,from_=8,to=32,orient=HORIZONTAL,label="Rayon maximal du disque",length=200)
-    #R_max.grid(row=5,column=0,sticky=W)
-    #print(type(R_max))
-
-    d = [camera_pos_x.get(), camera_pos_y.get(), camera_pos_z.get()]
-    d = np.array(d)
-    d = np.linalg.norm(d)
 
     # Rayon à l'infini : il faut implémenter un callback ou une binding methode
-    R_inf = Scale(params,from_= max(15.,RAdisk.get(),d), to=40,orient=HORIZONTAL,label="Rayon à l'infini",length=200,resolution=0.01)
-    R_inf.grid(row=5,column=0,sticky=W)
 
-    checkbutton=Checkbutton(params, text="sur-échantillonage")
-    checkbutton.grid(row=6,column=0, sticky=W)
+    R_inf = Scale(params,from_= 40, to=100,orient=HORIZONTAL,label="Rayon à l'infini",length=200)
+    R_inf.grid(row=6,column=0,sticky=W)
+
+    # Rayon max du disque
+    R_max = Scale(params,from_=8,to=32,orient=HORIZONTAL,label="Rayon maximal du disque",length=200)
+    R_max.grid(row=5,column=0,sticky=W)
+    print(type(R_max))
 
     # résolution
     listres = [f"384,216",f"960,540",f"1920,1080"]
@@ -81,25 +69,37 @@ def start_window():
     res.grid(row=3,column=1)
     label.grid(row=2,column=1)
 
-    # Mode : grille, photo, photo filtree
+    # Mode : afficher l'image filtrée ou non
+    filtre = Checkbutton(params,text="Afficher l'image filtrée")
+    filtre.grid(row=7,columnspan=2,pady=5)
 
+    #bouton de lancement
+    def demarrer_programme():
+        liste_param = open("params.txt",'w')
+        liste_param.write(f"{a.get()},{RAdisk.get()},{camera_pos_x.get()},{camera_pos_y.get()},{camera_pos_z.get()},{R_max.get()},{R_inf.get()},{variable.get()}")
+        liste_param.close()
+        return liste_param
 
-    #tkMessageBox si erreur
-    #bouton de lancement def ...
+    bouton_lancer = Button(params, text = 'Démarrer', command=demarrer_programme, fg='red', activebackground='white')
+    bouton_lancer.grid(row=8, columnspan = 2, pady=10 )
+
+    params.mainloop()
 
 
 bouton_commencer = Button(fenetre, text = 'Commencer', command=start_window, bg='black', fg='orange', activebackground='white')
 bouton_commencer.pack(pady=5 )
 
-
-img = ImageTk.PhotoImage(Image.open("resultattst.png"))
+img = ImageTk.PhotoImage(Image.open("image_filtree_kerr_3.png"))
 panel = Label(fenetre, image = img,bg='black')
 panel.pack(ipady=0,ipadx=0,padx=20)
 
 label3 = Label(fenetre, text="Projet réalisé dans le cadre de l'UE d'informatique \n du cycle ingénieur civil de Mines ParisTech \n sous la tutelle de Nikolas Stott", font=("Calibri", 8), bg='black', fg='white')
 label3.pack(padx=10,pady=10)
 
-bouton_biblio = Button(fenetre, text = 'Sources', command=start_window, bg='black', fg='white', activebackground='white')
-bouton_biblio.pack(pady=10)
+#bouton_biblio = Button(fenetre, text = 'Sources', command=start_window, bg='black', fg='white', activebackground='white')
+#bouton_biblio.pack(pady=10)
 
 fenetre.mainloop()
+
+#filtre : true = appel à filtre
+#false : imshow image initiale
