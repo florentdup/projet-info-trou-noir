@@ -639,7 +639,8 @@ void render(const char *name)
 
     pl::async_par_for(0, rdr.TotalChunknumber, [&](unsigned h) {
         //for (int h=0;h<rdr.TotalChunknumber;++h){ //A utiliser si jamais pl async ne marche pas
-        cout<<"file "<< name <<"- Chunk "<< h <<"/"<< rdr.TotalChunknumber<<" started - "<< 100. * (float)Chunkcomputed / ((float)rdr.TotalChunknumber) <<"%"<<endl;  
+        printf("file %s - Chunk %03d/%03d started - %.2f pourcents \n", name, h, rdr.TotalChunknumber, 100. * (float)Chunkcomputed / ((float)rdr.TotalChunknumber));
+        //cout<<"file "<< name <<"- Chunk "<< h <<"/"<< rdr.TotalChunknumber<<" started - "<< 100. * (float)Chunkcomputed / ((float)rdr.TotalChunknumber) <<"%"<<endl;  
         Chunkcomputed++;
 
         int j0 = rdr.linesPerChunk * h;
@@ -675,14 +676,25 @@ void render(const char *name)
 
     //Postprocess possible ici
 
+    
+
     int index = 0;
 
     uint8_t *image_byte = new uint8_t[rdr.width * rdr.height * CHANNEL_NUM]; //Image finale
 
+    cout<<"conversion"<<endl;
+
     for (int j = 0; j < rdr.height; ++j)
     {
+
+        
+        
         for (int i = 0; i < rdr.width; ++i)
         {
+   
+            image_byte[index] = char(image[index]);   
+            index++;
+
 
             image_byte[index] = char(image[index]);
             index++;
@@ -690,11 +702,10 @@ void render(const char *name)
             image_byte[index] = char(image[index]);
             index++;
 
-            image_byte[index] = char(image[index]);
-            index++;
         }
     }
 
+    
     stbi_write_png(name, rdr.width, rdr.height, CHANNEL_NUM, image_byte, rdr.width * CHANNEL_NUM);
 }
 
@@ -705,8 +716,9 @@ int image()
     {
     exit(0);
     }
-    rdr.height = 108;
-    rdr.width = 192;
+
+    rdr.height = 1080/8;
+    rdr.width = 1920/8;
     rdr.R_inf = 21.5; //distance à partir de laquelle on considere etre a l'infini
 
     rdr.linesPerChunk = 5; //Blocs de 5 ligne traités en parallele
@@ -716,8 +728,8 @@ int image()
     rdr.stepmin=0.002; //0.001 min sinon erreurs arrondi ?*/
 
     //RK4
-    rdr.stepmax = 0.02;
-    rdr.stepmin = 0.007;
+    rdr.stepmax = 0.02*15;
+    rdr.stepmin = 0.007*15;
 
     rdr.delta = .5; //Ecart angulaire (en pixel) entre les rayons d'un même faisceau
 
