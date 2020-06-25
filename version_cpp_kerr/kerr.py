@@ -5,5 +5,5 @@ img = mpimg.imread("adisk_upscaled.png")
 import matplotlib.pyplot as plt
 plt.imshow(img)
 plt.show()'''
-kerr.image()
-#kerr.image("params.txt")
+#kerr.image()
+kerr.image("params.txt")

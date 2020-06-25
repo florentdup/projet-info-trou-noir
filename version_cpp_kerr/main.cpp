@@ -636,13 +636,11 @@ void render(const char *name)
     float *image = new float[rdr.width * rdr.height * CHANNEL_NUM]; //Tableau qui va contenir les données
 
     int Chunkcomputed = 0;
-
     pl::async_par_for(0, rdr.TotalChunknumber, [&](unsigned h) {
         //for (int h=0;h<rdr.TotalChunknumber;++h){ //A utiliser si jamais pl async ne marche pas
         printf("file %s - Chunk %03d/%03d started - %.2f pourcents \n", name, h, rdr.TotalChunknumber, 100. * (float)Chunkcomputed / ((float)rdr.TotalChunknumber));
-        //cout<<"file "<< name <<"- Chunk "<< h <<"/"<< rdr.TotalChunknumber<<" started - "<< 100. * (float)Chunkcomputed / ((float)rdr.TotalChunknumber) <<"%"<<endl;  
+        //cout<<"file "<< name <<"- Chunk "<< h <<"/"<< rdr.TotalChunknumber<<" started - "<< 100. * (float)Chunkcomputed / ((float)rdr.TotalChunknumber) <<"%"<<endl;
         Chunkcomputed++;
-
         int j0 = rdr.linesPerChunk * h;
 
         for (int j = j0; j < j0 + rdr.linesPerChunk; ++j)
@@ -675,26 +673,17 @@ void render(const char *name)
     //}
 
     //Postprocess possible ici
-
-    
-
     int index = 0;
 
     uint8_t *image_byte = new uint8_t[rdr.width * rdr.height * CHANNEL_NUM]; //Image finale
 
-    cout<<"conversion"<<endl;
+    std::cout << "conversion" << endl;
 
     for (int j = 0; j < rdr.height; ++j)
     {
 
-        
-        
         for (int i = 0; i < rdr.width; ++i)
         {
-   
-            image_byte[index] = char(image[index]);   
-            index++;
-
 
             image_byte[index] = char(image[index]);
             index++;
@@ -702,101 +691,103 @@ void render(const char *name)
             image_byte[index] = char(image[index]);
             index++;
 
+            image_byte[index] = char(image[index]);
+            index++;
         }
     }
 
-    
     stbi_write_png(name, rdr.width, rdr.height, CHANNEL_NUM, image_byte, rdr.width * CHANNEL_NUM);
 }
 
-int image()
-{   
-    /*ifstream monFlux(fichier) ;
+int image(string fichier)//int image()
+{
+    ifstream monFlux;
+    monFlux.open(fichier.c_str()) ;
+    
     if (monFlux)
-    {  
-        monFlux>>bh.a>>RAdisk?>>scn.camera.x>>scn.camera.y>>scn.camera.z>>rdr.R_inf>>disk.R_max>>rdr.height>>rdr.width; */
-    if (adisk==NULL)
     {
-    exit(0);
-    }
+        monFlux >> bh.a >> disk.R_max >> scn.camera.x >> scn.camera.y >> scn.camera.z >> rdr.R_inf >> rdr.width >> rdr.height;
+        cout<<"Les paramètres ont été initialisés"<<endl;
+        if (adisk == NULL)
+        {
+            cout<<"L'image de départ n'a pas été trouvée"<< endl;
+            exit(0);
+        }
 
-    rdr.height = 1080/8;
-    rdr.width = 1920/8;
-    rdr.R_inf = 21.5; //distance à partir de laquelle on considere etre a l'infini
+        /*rdr.height = 1080 / 8;
+        rdr.width = 1920 / 8;
+        rdr.R_inf = 21.5; //distance à partir de laquelle on considere etre a l'infini */
 
-    rdr.linesPerChunk = 5; //Blocs de 5 ligne traités en parallele
+        rdr.linesPerChunk = 5; //Blocs de 5 ligne traités en parallele 
 
-    //Euler
-    /*rdr.stepmax=0.0035;
+        //Euler
+        /*rdr.stepmax=0.0035;
     rdr.stepmin=0.002; //0.001 min sinon erreurs arrondi ?*/
 
-    //RK4
-    rdr.stepmax = 0.02*15;
-    rdr.stepmin = 0.007*15;
+        //RK4
+        rdr.stepmax = 0.02 * 15;
+        rdr.stepmin = 0.007 * 15;
 
-    rdr.delta = .5; //Ecart angulaire (en pixel) entre les rayons d'un même faisceau
+        rdr.delta = .5; //Ecart angulaire (en pixel) entre les rayons d'un même faisceau
 
-    bh.a = 0.5;   //spin (adimensionné,entre 0 et 1)
-    bh.precalc(); //A executer avant inner orbit
+        //bh.a = 0.5;   //spin (adimensionné,entre 0 et 1)
+        bh.precalc(); //A executer avant inner orbit
 
-    disk.R_min = bh.inner_orbit(); //Trouver l'orbite la plus proche du trou noir encore stable (prograde)
+        disk.R_min = bh.inner_orbit(); //Trouver l'orbite la plus proche du trou noir encore stable (prograde)
 
-    disk.R_max = 16.;
-    disk.betamax = 0.65; //Vitesse du disque au plus proche du trou noir (c'est la qu'est la vitesse max pour un profil de vitesse en r^-1/2)
-    disk.TMax = 17500.;  //temperature du disque au plus proche du trou noir
+        //disk.R_max = 16.;
+        disk.betamax = 0.65; //Vitesse du disque au plus proche du trou noir (c'est la qu'est la vitesse max pour un profil de vitesse en r^-1/2)
+        disk.TMax = 17500.;  //temperature du disque au plus proche du trou noir
 
-    //scn.FOV=40.;
+        //scn.FOV=40.;
 
-    disk.texture_rep = 8.; //Répéter la texture du dique (en longeur pour ne pas qu'elle soit pixelisée)
+        disk.texture_rep = 8.; //Répéter la texture du dique (en longeur pour ne pas qu'elle soit pixelisée)
 
-    rdr.precalc(bh.a2); //quelques calculs pour avoir les carrés de certaines qtité et le fov en radian etc..
-    //scn.precalc(rdr.width);
-    disk.precalc();
+        rdr.precalc(bh.a2); //quelques calculs pour avoir les carrés de certaines qtité et le fov en radian etc..
+        //scn.precalc(rdr.width);
+        disk.precalc();
 
-    scn.generateSky();
+        scn.generateSky();
 
-    //Rendre une image fixe:
-    scn.camera.x = 20.;
-    scn.camera.y = 0.;
-    scn.camera.z = 1.2;
+        //Rendre une image fixe:
+        /*scn.camera.x = 20.;
+        scn.camera.y = 0.;
+        scn.camera.z = 1.2;*/
 
-    /*scn.camera.theta=0.04;
+        /*scn.camera.theta=0.04;
     scn.camera.phi=0.01;*/
 
-    readSensitivityData("sensitivity.txt", wavelengthSamples, wavelengthSamples5, sensitivitySamplesR, sensitivitySamplesG, sensitivitySamplesB);
+        readSensitivityData("sensitivity.txt", wavelengthSamples, wavelengthSamples5, sensitivitySamplesR, sensitivitySamplesG, sensitivitySamplesB);
 
-    /*for (int l = 0; l < SpectrumSampleSize; ++l)
+        /*for (int l = 0; l < SpectrumSampleSize; ++l)
     {
         printf("WL:%f R:%f, G:%f B:%f \n",wavelengthSamples[l],sensitivitySamplesR[l],sensitivitySamplesG[l],sensitivitySamplesB[l]);
     }*/
 
-    //float R,G,B;
-    //getBodyColor(&R,&G,&B,6000,1.);
-    //printf("R:%f G:%f, B:%f \n",R,G,B);
+        //float R,G,B;
+        //getBodyColor(&R,&G,&B,6000,1.);
+        //printf("R:%f G:%f, B:%f \n",R,G,B);
 
-    cout<<"Start"<<endl;
-    render("resultat.png");
-    cout<<"End"<<endl;
+        cout << "Start" << endl;
+        render("resultat.png");
+        cout << "End" << endl;
 
-    stbi_image_free(adisk);
-
-    
-    /*}
+        stbi_image_free(adisk);
+    }
     else
     {
-        cout<<"Erreur le fichier ne s'est pas ouvert"<<endl;
-    }*/
+        cout << "Erreur le fichier ne s'est pas ouvert" << endl;
+    }
     return 0;
-
 }
 
 /*int main()
 {
-    image();
+    image("params.txt");
     return 0;
 }*/
 
-#include<boost/python.hpp> 
+#include <boost/python.hpp> 
 
 BOOST_PYTHON_MODULE(kerr)
 {

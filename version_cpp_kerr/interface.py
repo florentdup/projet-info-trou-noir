@@ -5,12 +5,12 @@ from tkinter import ttk
 from tkinter import Toplevel
 from PIL import ImageTk, Image
 import numpy as np
-#import kerr
+import kerr
 
 ## page d'accueil
 
-#def calc_image(param):
-#    kerr.image()
+def calc_image(param):
+    kerr.image(param)
 
 fenetre = Tk()
 fenetre.title('projet trou noir')
@@ -89,20 +89,24 @@ def start_window():
 
 
     #bouton de lancement
-    def demarrer_programme():
+    def calc_image(param):
+        kerr.image(param)
+    def demarrer_variable():
         paramresolution=variable.get()
         if checkbuttonsurech.instate(['selected']):
             tmp=variable.get()[:].split(',') #Faire une copie de la string, puis la séparer
-            paramresolution=str(int(tmp[0])*2)+','+str(int(tmp[1])*2)             
+            paramresolution=str(int(tmp[0])*2)+' '+str(int(tmp[1])*2)             
     
         liste_param = open("params.txt",'w')
         liste_param.write(f"{a.get()} {RAdisk.get()} {camera_pos_x.get()} {camera_pos_y.get()} {camera_pos_z.get()} {R_inf.get()} {paramresolution}")
         liste_param.close()
         return liste_param
-
+    def demarrer_programme():
+        demarrer_variable()
+        calc_image("params.txt")
     bouton_lancer = Button(params, text = 'Démarrer', command=demarrer_programme, fg='red', activebackground='white')
     bouton_lancer.grid(row=8, columnspan = 2, pady=10 )
-
+    
     params.mainloop()
 
 
