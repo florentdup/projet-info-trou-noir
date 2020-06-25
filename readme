@@ -1,7 +1,7 @@
 http://rantonels.github.io/starless/ -->Version python
 https://www.codeproject.com/Articles/994466/Ray-Tracing-a-Black-Hole-in-Csharp -->pour les équations dans la métrique de Kerr
 
-Pour exécuter le code : vérifier l'installation de boost.python. Modifier le dossier .vscode si l'installation ne marche pas, 
+Pour exécuter le code : vérifier l'installation de boost.python (installé avec sudo apt-get install libboost-all-dev). Modifier le dossier .vscode si l'installation ne marche pas, 
 en indiquant vos chemins dans l'ordinateur.
 Si vous travaillez sur wsl : 
 sudo apt-get install  openssh-server
