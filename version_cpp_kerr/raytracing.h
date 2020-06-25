@@ -59,7 +59,7 @@ struct Rendu
 
     static const int maxtransparency = 4; //Nombre de collision max pour un rayon
 
-    int linesPerChunk, TotalChunknumber;
+    int ChunkSizeWidth,ChunkSizeHeight,NChunkWidth, TotalChunknumber;
 
     float C;
 
@@ -82,7 +82,11 @@ struct Rendu
         R_inf2 = R_inf * R_inf;
         R_min2 = R_min * R_min;
 
-        TotalChunknumber = height / linesPerChunk;
+        NChunkWidth=(width / ChunkSizeWidth);
+
+        TotalChunknumber = (height/ChunkSizeHeight)*NChunkWidth ;
+
+        
 
         dstep = stepmax - stepmin;
         C = 1. / ((R_inf - R_min) * (R_inf - R_min));

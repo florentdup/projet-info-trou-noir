@@ -638,19 +638,22 @@ void render(const char *name)
     int Chunkcomputed = 0;
     pl::async_par_for(0, rdr.TotalChunknumber, [&](unsigned h) {
         //for (int h=0;h<rdr.TotalChunknumber;++h){ //A utiliser si jamais pl async ne marche pas
-        printf("file %s - Chunk %03d/%03d started - %.2f pourcents \n", name, h, rdr.TotalChunknumber, 100. * (float)Chunkcomputed / ((float)rdr.TotalChunknumber));
-        //cout<<"file "<< name <<"- Chunk "<< h <<"/"<< rdr.TotalChunknumber<<" started - "<< 100. * (float)Chunkcomputed / ((float)rdr.TotalChunknumber) <<"%"<<endl;
-        Chunkcomputed++;
-        int j0 = rdr.linesPerChunk * h;
+        printf("file %s - Chunk %04d/%04d started - %.2f pourcents  \n", name, h, rdr.TotalChunknumber, 100. * (float)Chunkcomputed / ((float)rdr.TotalChunknumber));
 
-        for (int j = j0; j < j0 + rdr.linesPerChunk; ++j)
+        int j0 = h/rdr.NChunkWidth;
+        int i0 = h % rdr.NChunkWidth;
+
+        i0*=rdr.ChunkSizeWidth;
+        j0*=rdr.ChunkSizeHeight;
+        int i1=i0 + rdr.ChunkSizeWidth;
+        int j1=j0 + rdr.ChunkSizeHeight;
+
+
+        for (int j = j0; j < j1; ++j)
         {
 
-            for (int i = 0; i < rdr.width; ++i)
+            for (int i = i0; i < i1; ++i)
             {
-
-                //if ((i>.3*rdr.width) && (i<0.55*rdr.width) && (j>0.1*rdr.height) && (j<0.55*rdr.height)){//calculer des petites portions pour faire des tests
-                //if ((i>.0*rdr.width) && (i<0.05*rdr.width) && (j>0.*rdr.height) && (j<0.05*rdr.height)){
 
                 float pixelr, pixelg, pixelb;
 
@@ -666,9 +669,11 @@ void render(const char *name)
                 image[loc + 1] = pixelg;
                 image[loc + 2] = pixelb;
 
-                //}
+                
             }
         }
+        Chunkcomputed++;
+        
     });
     //}
 
@@ -696,7 +701,7 @@ void render(const char *name)
         }
     }
 
-    stbi_write_png(name, rdr.width, rdr.height, CHANNEL_NUM, image_byte, rdr.width * CHANNEL_NUM);
+    stbi_write_png(name, rdr.width, rdr.height, CHANNEL_NUM, image_byte, rdr.width * CHANNEL_NUM); 
 }
 
 int image(string fichier)//int image()
@@ -718,7 +723,8 @@ int image(string fichier)//int image()
         rdr.width = 1920 / 8;
         rdr.R_inf = 21.5; //distance à partir de laquelle on considere etre a l'infini */
 
-        rdr.linesPerChunk = 5; //Blocs de 5 ligne traités en parallele 
+        rdr.ChunkSizeHeight = 15; //Blocs de 15 par 15 pixels traités en parallele
+        rdr.ChunkSizeWidth = 15; //Blocs de 15 par 15 pixels traités en parallele
 
         //Euler
         /*rdr.stepmax=0.0035;
