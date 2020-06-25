@@ -3,8 +3,10 @@
 from tkinter import *
 from tkinter import ttk
 from tkinter import Toplevel
-from PIL import ImageTk, Image
+from PIL import *
 import numpy as np
+import kerr
+import filtres
 
 ## page d'accueil
 
@@ -17,6 +19,10 @@ label1.pack(pady=10,padx=20)
 
 label2 = Label(fenetre, text="par Florent Dupont, Marie-Clémentine Quilleriet \n et Camille Srecki", font=("Calibri", 11), bg='black', fg='white')
 label2.pack(padx=10, pady=5)
+
+def calculs(fichier, trou_noir):
+    kerr.image()
+    
 
 def start_window():
     params = Toplevel(fenetre,padx=5,pady=5)

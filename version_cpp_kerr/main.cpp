@@ -699,8 +699,11 @@ void render(const char *name)
 }
 
 int image()
-{
-
+{   
+    /*ifstream monFlux(fichier) ;
+    if (monFlux)
+    {  
+        monFlux>>bh.a>>RAdisk?>>scn.camera.x>>scn.camera.y>>scn.camera.z>>rdr.R_inf>>disk.R_max>>rdr.height>>rdr.width; */
     if (adisk==NULL)
     {
     exit(0);
@@ -765,7 +768,14 @@ int image()
 
     stbi_image_free(adisk);
 
+    
+    /*}
+    else
+    {
+        cout<<"Erreur le fichier ne s'est pas ouvert"<<endl;
+    }*/
     return 0;
+
 }
 
 /*int main()
