@@ -9,7 +9,7 @@ Installer Xming (à partir d'internet, par exemple avec SourceForge)
 sudo apt-get install x11-apps
 export DISPLAY=:0
 xeyes 
-A cette étape, vous devez obtenir une fen^tre graphique avec des yeux. Fermez là, Xming fonctionne.
+A cette étape, vous devez obtenir une fenêtre graphique avec des yeux. Fermez la, Xming fonctionne.
 sudo apt-get install blockout2
 
 Pour compiler les fichiers : se placer à hauteur du dossier version_cpp_kerr et créer un dossier build. Se placer dans ce dossier build.
