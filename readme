@@ -1,7 +1,7 @@
 http://rantonels.github.io/starless/ -->Version python
 https://www.codeproject.com/Articles/994466/Ray-Tracing-a-Black-Hole-in-Csharp -->pour les équations dans la métrique de Kerr
 
-Pour exécuter le code : vérifier l'installation de boost.python. Modifier le dossier .vscode si l'installation ne marche pas, 
+Pour exécuter le code : vérifier l'installation de boost.python (installé avec sudo apt-get install libboost-all-dev). Modifier le dossier .vscode si l'installation ne marche pas, 
 en indiquant vos chemins dans l'ordinateur.
 Si vous travaillez sur wsl : 
 sudo apt-get install  openssh-server
@@ -9,7 +9,7 @@ Installer Xming (à partir d'internet, par exemple avec SourceForge)
 sudo apt-get install x11-apps
 export DISPLAY=:0
 xeyes 
-A cette étape, vous devez obtenir une fen^tre graphique avec des yeux. Fermez là, Xming fonctionne.
+A cette étape, vous devez obtenir une fenêtre graphique avec des yeux. Fermez la, Xming fonctionne.
 sudo apt-get install blockout2
 
 Pour compiler les fichiers : se placer à hauteur du dossier version_cpp_kerr et créer un dossier build. Se placer dans ce dossier build.
